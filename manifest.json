@@ -14,7 +14,8 @@
   "permissions": [
     "tabs",
     "scripting",
-    "downloads"
+    "downloads",
+    "system.display"
   ],
 
   "host_permissions": [
