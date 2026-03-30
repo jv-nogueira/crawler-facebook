@@ -7,61 +7,62 @@ setTimeout(() => {
         let id = obterIdPerfilPrincipal();
 
         if (!id) {
-
             id = obterUsernameDaUrl();
-
             console.log("Usando username:", id);
-
         }
 
         id = id || "Não tem ID";
 
         console.log("ID capturado:", id);
 
-        const imagem = document.querySelectorAll("image")[1];
+        // PRIMEIRO pergunta ao background se precisa baixar
+            chrome.runtime.sendMessage(
+        {
+            acao: "verificarId",
+            id
+        },
+        (res) => {
 
-        if (!imagem) {
+            if (!res || res.existe) {
+
+                console.log("ID já existe, pulando:", id);
+
+                chrome.runtime.sendMessage({
+                    acao: "baixarImagem",
+                    id,
+                    url: ""
+                });
+
+                return;
+            }
+
+            // =====================
+            // SEM CLICK → PEGA DIRETO
+            // =====================
+
+            const imagem = document.querySelectorAll("image")[1];
+
+            if (!imagem) {
+
+                chrome.runtime.sendMessage({
+                    acao: "baixarImagem",
+                    id,
+                    url: ""
+                });
+
+                return;
+            }
+
+            const urlImagem = imagem.href?.baseVal || "";
 
             chrome.runtime.sendMessage({
-
-                acao: "baixarImagem",
-                id,
-                url: ""
-
-            });
-
-            return;
-
-        }
-
-        imagem.parentElement
-            ?.parentElement
-            ?.parentElement
-            ?.parentElement
-            ?.click();
-
-
-        setTimeout(() => {
-
-            const imgGrande =
-                document.querySelector("[data-visualcompletion='media-vc-image']");
-
-            const urlFallback =
-                document.querySelectorAll("image")[1]?.href?.baseVal || "";
-
-            const urlImagem = imgGrande
-                ? imgGrande.src
-                : urlFallback;
-
-            chrome.runtime.sendMessage({
-
                 acao: "baixarImagem",
                 id,
                 url: urlImagem
-
             });
 
-        }, 5000);
+        }
+    );
 
     } catch (e) {
 
@@ -77,7 +78,7 @@ setTimeout(() => {
 
     }
 
-}, 5000);
+}, 8000);
 
 
 

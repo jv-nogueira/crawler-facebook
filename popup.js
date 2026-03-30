@@ -66,3 +66,38 @@ function atualizarBotao() {
             : "Executar";
 
 }
+
+const selecionarPasta =
+    document.getElementById("selecionarPasta");
+
+const inputPasta =
+    document.getElementById("inputPasta");
+
+
+selecionarPasta.addEventListener("click", () => {
+
+    inputPasta.click();
+
+});
+
+
+inputPasta.addEventListener("change", (e) => {
+
+    const arquivos = e.target.files;
+
+    const nomes = [];
+
+    for (const file of arquivos) {
+
+        nomes.push(file.name);
+
+    }
+
+    chrome.runtime.sendMessage({
+
+        acao: "listarArquivos",
+        arquivos: nomes
+
+    });
+
+});

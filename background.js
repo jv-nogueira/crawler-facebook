@@ -1,10 +1,11 @@
 let cancelado = false;
 let linhasParaProcessar = [];
+let idsJaBaixados = new Set();
 
 const PLANILHA =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6HwOYxhj1vURMMPwkM8VB55sQ2clYYuLuFeeFEBMWVoEgS5HleyYAAm_UM1hxKszt321P8X8mleC2/pub?gid=0&single=true&output=csv';
 
-const MAX_POPUPS = 15;
+const MAX_POPUPS = 10;
 
 let urls = [];
 let indiceAtual = 0;
@@ -22,6 +23,38 @@ let posicoesTela = [];
 console.log("Background iniciado");
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
+    if (msg.acao === "verificarId") {
+
+    const id =
+        (msg.id && msg.id.trim())
+            ? msg.id.trim()
+            : "Não tem ID";
+
+    sendResponse({
+        existe: idsJaBaixados.has(id)
+    });
+
+    return true;
+}
+
+    if (msg.acao === "listarArquivos") {
+
+        idsJaBaixados.clear();
+
+        for (const nome of msg.arquivos) {
+
+            const id = nome.replace(/\.(jpeg|jpg|png)$/i, "");
+
+            idsJaBaixados.add(id);
+
+        }
+
+        console.log("IDs já existentes na pasta:");
+
+        console.log([...idsJaBaixados]);
+
+    }
 
     if (msg.acao === "status") {
 
@@ -68,40 +101,57 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     // DOWNLOAD IMAGEM
-    if (msg.acao === "baixarImagem") {
+if (msg.acao === "baixarImagem") {
 
     const id =
         (msg.id && msg.id.trim())
             ? msg.id.trim()
             : "Não tem ID";
 
-        const windowId = sender?.tab?.windowId;
+    const windowId = sender?.tab?.windowId;
 
-        const indicePerfil =
-            janelasAtivas.get(windowId);
+    const indicePerfil =
+        janelasAtivas.get(windowId);
 
-        // GUARDA NA POSIÇÃO CERTA
-        if (indicePerfil !== undefined) {
+    if (indicePerfil !== undefined) {
 
-            idsColetados[indicePerfil] = id;
-
-        }
-
-        const nomeArquivo = id + ".png";
-
-        chrome.downloads.download({
-
-            url: msg.url,
-            filename: nomeArquivo,
-            saveAs: false
-
-        }, () => {
-
-            fecharEContinuar(windowId);
-
-        });
+        idsColetados[indicePerfil] = id;
 
     }
+
+    // =========================
+    // VERIFICA SE JÁ EXISTE FOTO
+    // =========================
+
+    if (idsJaBaixados.has(id)) {
+
+        console.log("Imagem já existe, pulando:", id);
+
+        fecharEContinuar(windowId);
+
+        return;
+
+    }
+
+    // =========================
+    // BAIXA NORMALMENTE
+    // =========================
+
+    const nomeArquivo = id + ".png";
+
+    chrome.downloads.download({
+
+        url: msg.url,
+        filename: nomeArquivo,
+        saveAs: false
+
+    }, () => {
+
+        fecharEContinuar(windowId);
+
+    });
+
+}
 
     return true;
 
@@ -434,3 +484,4 @@ function finalizarProcessamento(){
     cancelado=false;
 
 }
+
